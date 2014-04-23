@@ -1,0 +1,35 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+user=$1
+
+echo "Starting pulseaudio"
+su $user -c "pulseaudio --start"
+
+reset() {
+    echo "Resetting the bluetooth radio"
+    service bluetooth restart
+    sleep 5
+
+    echo "Reconfiguring and setting bluetooth to visible"
+    hciconfig hci0 noscan
+    hciconfig hci0 name "Streamy Speakers"
+    hciconfig hci0 class 0x200414
+    hciconfig hci0 piscan
+}
+
+echo "Starting the bluetooth agent"
+
+reset
+
+sudo -u $user bluetooth-agent 0000 &
+sudo -u $user ./streamy-py
+
+while :
+do
+    sleep 1
+done

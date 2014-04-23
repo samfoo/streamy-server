@@ -1,0 +1,54 @@
+#!/usr/bin/python
+
+import gobject
+import dbus
+import dbus.mainloop.glib
+import os
+import subprocess
+
+def shell(cmd):
+    return subprocess.check_output(cmd, shell=True, stderr=subprocess.STDOUT)
+
+def mute():
+    print "[manager] muting"
+    shell("pactl set-sink-mute 0 1")
+
+def unmute():
+    print "[manager] un-muting"
+    shell("pactl set-sink-mute 0 0")
+    shell("pactl set-sink-volume 0 100%")
+
+def property_changed(name, value, path, interface):
+    iface = interface[interface.rfind(".") + 1:]
+    val = str(value)
+    print "[manager] {%s.PropertyChanged} [%s] %s = %s" % (iface, path, name, val)
+
+    if iface == "Control" and name == "Connected" and val == "1":
+        print "[manager] setting up loopback"
+
+        source = "_".join(path.split('/')[-1].split('_')[1:])
+        sink = shell("pactl list | grep -m 1 'Name: alsa_output' | cut -c 8-")
+
+        cmd = "pactl load-module module-loopback source=bluez_source.%s sink=%s" % (source, sink)
+
+        print "[manager] %s" % cmd
+
+        mute()
+        shell(cmd)
+        unmute()
+
+    elif iface == "Control" and name == "Connected" and val == "0":
+        print "[manager] tearing down loopback"
+
+        bt_addr = "_".join(path.split('/')[-1].split('_')[1:])
+        cmd = "for i in $(pactl list short modules | grep module-loopback | grep source=bluez_source.%s | cut -f 1); do pactl unload-module $i; done" % bt_addr
+        os.system(cmd)
+
+if __name__ == '__main__':
+    dbus.mainloop.glib.DBusGMainLoop(set_as_default=True)
+    bus = dbus.SystemBus()
+    bus.add_signal_receiver(property_changed, bus_name="org.bluez", signal_name = "PropertyChanged", path_keyword="path", interface_keyword="interface")
+    mainloop = gobject.MainLoop()
+
+    print "[manager] awaiting connections..."
+    mainloop.run()
