@@ -9,18 +9,34 @@
   qdbus
   pulseaudio-module-bluetooth
   alsa-utils
-  libshadow-ruby1.8
 }.each do |pkg|
   package pkg do
     action :install
   end
 end
 
-user "streamy" do
+directory "/apps" do
+  owner "root"
+  group "root"
+  mode 0777
   action :create
 end
 
-group "lp" do
+user "streamy" do
+  home "/apps/streamy"
+  supports manage_home: true
+  action :create
+end
+
+%w{lp pulse audio}.each do |g|
+  group g do
+    action :modify
+    members "streamy"
+    append true
+  end
+end
+
+group "pulse" do
   action :modify
   members "streamy"
   append true
@@ -48,9 +64,4 @@ cookbook_file "/etc/pulse/daemon.conf" do
   owner "root"
   group "root"
   action :create
-end
-
-execute "generate locales" do
-  command "locale-gen"
-  action :run
 end
