@@ -31,6 +31,9 @@ if [[ $? != 0 ]]
 then
     echo "=> chef-solo not found"
     echo "=> installing chef"
+    # apt-get install ruby
+    # gem install chef
+    # Prefer to use omnibus installer, but opscode is down
     curl -L https://www.opscode.com/chef/install.sh | bash
 else
     echo "=> chef already installed, skipping"
