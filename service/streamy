@@ -9,6 +9,7 @@ user=$1
 
 echo "Starting pulseaudio"
 su $user -c "pulseaudio --start"
+su $user -c "amixer -c 0 cset numid=3 1"
 
 reset() {
     echo "Resetting the bluetooth radio"
@@ -16,6 +17,7 @@ reset() {
     sleep 5
 
     echo "Reconfiguring and setting bluetooth to visible"
+    hciconfig hci0 up
     hciconfig hci0 noscan
     hciconfig hci0 name "Streamy Speakers"
     hciconfig hci0 class 0x200414

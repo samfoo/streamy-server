@@ -22,8 +22,7 @@ directory "/apps" do
   action :create
 end
 
-user "streamy" do
-  home "/apps/streamy"
+user "pi" do
   supports manage_home: true
   action :create
 end
@@ -31,15 +30,9 @@ end
 %w{lp pulse audio}.each do |g|
   group g do
     action :modify
-    members "streamy"
+    members "pi"
     append true
   end
-end
-
-group "pulse" do
-  action :modify
-  members "streamy"
-  append true
 end
 
 cookbook_file "/etc/bluetooth/main.conf" do

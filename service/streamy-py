@@ -17,13 +17,33 @@ def unmute():
     print "[manager] un-muting"
     shell("pactl set-sink-mute 0 0")
     shell("pactl set-sink-volume 0 100%")
+    shell("amixer set Master 100%")
+
+def is_audio_source_connect(iface, name, val):
+    # Originally this was the following... But this isn't the message that my
+    # Mac sends to the speakers.
+    # iface == "Control" and name == "Connected" and val == "1":
+
+    return iface == "AudioSource" and \
+       name == "State" and \
+       val == "connected"
+
+def is_audio_source_disconnect(iface, name, val):
+    # Originally this was the following... But this isn't the message that my
+    # Mac sends to the speakers.
+    # iface == "Control" and name == "Connected" and val == "0":
+
+    return iface == "AudioSource" and \
+            name == "State" and \
+            val == "disconnected"
 
 def property_changed_handler(name, value, path, interface):
     iface = interface[interface.rfind(".") + 1:]
     val = str(value)
     print "[manager] {%s.PropertyChanged} [%s] %s = %s" % (iface, path, name, val)
 
-    if iface == "Control" and name == "Connected" and val == "1":
+    if is_audio_source_connect(iface, name, val):
+        print "[manager] audio source connected"
         print "[manager] setting up loopback"
 
         source = "_".join(path.split('/')[-1].split('_')[1:])
@@ -37,7 +57,7 @@ def property_changed_handler(name, value, path, interface):
         shell(cmd)
         unmute()
 
-    elif iface == "Control" and name == "Connected" and val == "0":
+    elif is_audio_source_disconnect(iface, name, val):
         print "[manager] tearing down loopback"
         mute()
 

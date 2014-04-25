@@ -1,5 +1,14 @@
 #!/bin/bash
 
+set -e
+
 ip=$1
 
+echo "=> building streamy deb"
+make package
+
+echo "=> shipping deb"
+scp streamy_1.0_armhf.deb pi@$ip:/tmp
+
+echo "=> deploying..."
 ssh pi@$ip 'sudo bash -s' < remote-deploy-agent

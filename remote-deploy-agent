@@ -5,12 +5,15 @@ if [ "$(id -u)" != "0" ]; then
   exit 1
 fi
 
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+
 which git
 if [[ $? != 0 ]]
 then
     echo "=> git not found"
     echo "=> installing git"
-    apt-get install git
+    apt-get install -y git
 else
     echo "=> git already installed, skipping"
 fi
@@ -31,14 +34,22 @@ if [[ $? != 0 ]]
 then
     echo "=> chef-solo not found"
     echo "=> installing chef"
+
+    # Chef package tries to setup a chef client by default
+    apt-get install -y chef
+
+    # Gem installs are slow as balls on a pi
     # apt-get install ruby
-    # gem install chef
+    # gem install chef --verbose
+
     # Prefer to use omnibus installer, but opscode is down
-    curl -L https://www.opscode.com/chef/install.sh | bash
+    # curl -L https://www.opscode.com/chef/install.sh | bash
 else
     echo "=> chef already installed, skipping"
 fi
 
 echo "=> running chef cookbooks"
-chef-solo -c $DIR/solo.rb -o apt,streamy-server
+chef-solo -c $DIR/solo.rb -o streamy-server
 
+echo "=> installing package"
+dpkg -i /tmp/streamy_1.0_armhf.deb
