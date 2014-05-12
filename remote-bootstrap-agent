@@ -1,0 +1,52 @@
+#!/bin/bash
+
+if [ "$(id -u)" != "0" ]; then
+  echo "This script must be run as root" 1>&2
+  exit 1
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update
+
+which git
+if [[ $? != 0 ]]
+then
+    echo "=> git not found"
+    echo "=> installing git"
+    apt-get install -y git
+else
+    echo "=> git already installed, skipping"
+fi
+
+DIR="$(mktemp -d)"
+echo "=> cloning recipes"
+git clone https://github.com/samfoo/streamy-server.git $DIR
+cd $DIR
+
+echo "=> fetching submodules"
+git submodule update --init
+
+echo "=> creating chef solo configuration"
+echo "cookbook_path '$DIR/cookbooks'" > $DIR/solo.rb
+
+which chef-solo
+if [[ $? != 0 ]]
+then
+    echo "=> chef-solo not found"
+    echo "=> installing chef"
+
+    # Chef package tries to setup a chef client by default
+    apt-get install -y chef
+
+    # Gem installs are slow as balls on a pi
+    # apt-get install ruby
+    # gem install chef --verbose
+
+    # Prefer to use omnibus installer, but opscode is down
+    # curl -L https://www.opscode.com/chef/install.sh | bash
+else
+    echo "=> chef already installed, skipping"
+fi
+
+echo "=> running chef cookbooks"
+chef-solo -c $DIR/solo.rb -o streamy-server

@@ -17,25 +17,23 @@ def unmute():
     print "[manager] un-muting"
     shell("pactl set-sink-mute 0 0")
     shell("pactl set-sink-volume 0 100%")
-    shell("amixer set Master 100%")
+    shell("amixer sset Master 100%")
 
 def is_audio_source_connect(iface, name, val):
     # Originally this was the following... But this isn't the message that my
     # Mac sends to the speakers.
     # iface == "Control" and name == "Connected" and val == "1":
 
-    return iface == "AudioSource" and \
-       name == "State" and \
-       val == "connected"
+    return (iface == "Control" and name == "Connected" and val == "1") or \
+           (iface == "Device" and name == "Connected" and val == "1")
 
 def is_audio_source_disconnect(iface, name, val):
     # Originally this was the following... But this isn't the message that my
     # Mac sends to the speakers.
     # iface == "Control" and name == "Connected" and val == "0":
 
-    return iface == "AudioSource" and \
-            name == "State" and \
-            val == "disconnected"
+    return (iface == "Control" and name == "Connected" and val == "0") or \
+           (iface == "Device" and name == "Connected" and val == "0")
 
 def property_changed_handler(name, value, path, interface):
     iface = interface[interface.rfind(".") + 1:]
@@ -49,7 +47,7 @@ def property_changed_handler(name, value, path, interface):
         source = "_".join(path.split('/')[-1].split('_')[1:])
         sink = shell("pactl list | grep -m 1 'Name: alsa_output' | cut -c 8-")
 
-        cmd = "pactl load-module module-loopback source=bluez_source.%s sink=%s" % (source, sink)
+        cmd = "pactl load-module module-loopback source=bluez_source.%s sink=%s" % (source.strip(), sink.strip())
 
         print "[manager] %s" % cmd
 
@@ -61,8 +59,7 @@ def property_changed_handler(name, value, path, interface):
         print "[manager] tearing down loopback"
         mute()
 
-        source = "_".join(path.split('/')[-1].split('_')[1:])
-        cmd = "for i in $(pactl list short modules | grep module-loopback | grep source=bluez_source.%s | cut -f 1); do pactl unload-module $i; done" % source
+        cmd = "for i in $(pactl list short modules | grep module-loopback | grep source=bluez_source | cut -f 1); do pactl unload-module $i; done"
 
         print "[manager] %s" % cmd
 

@@ -5,7 +5,9 @@ set -e
 ip=$1
 
 echo "=> building streamy deb"
-make package
+rm -f streamy*.deb
+fpm -s dir -t deb -n streamy -a armhf \
+    --prefix /apps/streamy service
 
 echo "=> shipping deb"
 scp streamy_1.0_armhf.deb pi@$ip:/tmp

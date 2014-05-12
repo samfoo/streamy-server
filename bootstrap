@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+ip=$1
+
+echo "=> bootstrapping..."
+ssh pi@$ip 'sudo bash -s' < remote-deploy-agent

@@ -1,11 +1,13 @@
 #!/bin/bash
 
+set -e
+
 if [ "$(id -u)" != "0" ]; then
   echo "This script must be run as root" 1>&2
   exit 1
 fi
 
-user=$1
+user="pi"
 
 echo "Starting pulseaudio"
 su $user -c "pulseaudio --start"
@@ -29,9 +31,4 @@ echo "Starting the bluetooth agent"
 reset
 
 sudo -u $user bluetooth-agent 0000 &
-sudo -u $user ./streamy-py
-
-while :
-do
-    sleep 1
-done
+sudo -u $user /apps/streamy/service/streamy-py
